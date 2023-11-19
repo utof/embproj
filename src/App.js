@@ -1,8 +1,11 @@
 import { useCallback, useState } from 'react';
 import ReactFlow, { Background, addEdge, applyEdgeChanges, applyNodeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
-import BackgroundNode from './etc/bgNode.js';
+// import BackgroundNode from './etc/bgNode.js';
+
 import TextUpdaterNode from './etc/TextUpdaterNode.js';
+import { initialNodes } from './etc/nodes.js';
+import AxisNode from './etc/axisnode.js'
 
 import './etc/TextUpdaterNode.css';
 
@@ -10,13 +13,10 @@ const rfStyle = {
   backgroundColor: '#B8CEFF',
 };
 
-const initialNodes = [
-  { id: 'baa', type: 'textUpdater', position: { x: 0, y: 0 }, data: { value: 123, random: 999 } },
-  { id: 'bab', type: 'textUpdater', position: { x: 100, y: 200 }, data: { value: 124, random: 123} },
-];
 // we define the nodeTypes outside of the component to prevent re-renderings
 // you could also use useMemo inside the component
-const nodeTypes = { textUpdater: TextUpdaterNode };
+const nodeTypes = { textUpdater: TextUpdaterNode,
+    AxisNode: AxisNode}; // why cant i add fucking axisnode
 
 function App() {
   const [nodes, setNodes] = useState(initialNodes);
@@ -46,12 +46,12 @@ function App() {
     fitView
     style={rfStyle}
     >
-      <BackgroundNode/>
-{/* 
+      {/* <BackgroundNode/> */}
+
       <Background
         // color = '#fff'
         // style={{ backgroundImage: `url(${background})` }}
-      /> */}
+      />
     </ReactFlow>
 
 

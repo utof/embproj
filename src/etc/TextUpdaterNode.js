@@ -11,7 +11,7 @@ function TextUpdaterNode({ data }) {
   return (
     <div 
       className="text-updater-node"
-      style={{width: '80%', height: '160%'}} 
+      style={{width: '80%', height: '16%'}} 
     >
       <div className="input">
         <label>Text:</label> 
