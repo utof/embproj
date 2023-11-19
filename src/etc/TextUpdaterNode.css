@@ -1,0 +1,28 @@
+/* TextUpdaterNode.css */
+
+.text-updater-node {
+    border: 1px solid #c9c9c9;
+    border-radius: 5px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 10px;
+  }
+  .input {
+    padding: 5px;
+  }
+  
+  label {
+    font-size: 12px;
+  }
+  .bottom {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-between;
+    align-self: flex-end;
+  }
+  .id, .workers, .random {
+    padding: 5px;
+  }
