@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import ReactFlow, { Background, addEdge, applyEdgeChanges, applyNodeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
-import background from './etc/axis.svg'
+import BackgroundNode from './etc/bgNode.js';
 import TextUpdaterNode from './etc/TextUpdaterNode.js';
 
 import './etc/TextUpdaterNode.css';
@@ -37,24 +37,28 @@ function App() {
 
   return (
     <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      nodeTypes={nodeTypes}
-      fitView
-      style={rfStyle}
-      >
-
+    nodes={nodes}
+    edges={edges}
+    onNodesChange={onNodesChange}
+    onEdgesChange={onEdgesChange}
+    onConnect={onConnect}
+    nodeTypes={nodeTypes}
+    fitView
+    style={rfStyle}
+    >
+      <BackgroundNode/>
+{/* 
       <Background
         // color = '#fff'
-        style={{ backgroundImage: `url(${background})` }}
-      />
+        // style={{ backgroundImage: `url(${background})` }}
+      /> */}
     </ReactFlow>
 
 
 );
+  const onLoad = (reactFlowInstance) => {
+    reactFlowInstance.setBackgroundColor('#fff'); 
+  }
 }
 
 export default App;
