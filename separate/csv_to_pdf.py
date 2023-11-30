@@ -1,59 +1,117 @@
 import csv
 import qrcode
-from fpdf import FPDF
-import os
-# import cairosvg
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, Table
+import tempfile
 
-pdf = FPDF() 
-pdf.set_auto_page_break(auto=True, margin=0)
+# Define constants
+SQUARE_WIDTH = 70  # mm
+SQUARE_HEIGHT = 74.25  # mm
+GAP = 10  # mm
+QR_CODE_SIZE = 20  # mm
 
-with open('data.csv', 'r', encoding="utf-8") as f:
-  reader = csv.DictReader(f)
-  quadrants_per_page = 12
-  pages = {}
-  # print(reader.fieldnames)
-  y = 10 
-  for row in reader:
-    name = row['\ufeffName']
-    customer = row['заказчик '] or '?'
-    stage = row['стадия']
-    
-    if stage not in pages:
-      pages[stage] = FPDF()
-      pages[stage].add_page() # Add first page
-      pages[stage].set_auto_page_break(auto=True, margin=0)
-    
-    pdf = pages[stage]
-    pdf.set_font('Times', '', 16)  
-    pdf.text(10, y, name)
-    y += 10 
+# Read CSV file
+def read_csv_data(filename):
+    with open(filename, encoding='utf-8') as csvfile:
+        # Strip BOM from the CSV file
+        csvfile.seek(0)
+        first_line = csvfile.readline()
+        if first_line.startswith('\ufeff'):
+            csvfile.seek(0)
 
-    if y > 297 - 74.25: 
-      pdf.add_page()
-      y = 10
-    
-    pdf.text(10, 10, name)
+        reader = csv.DictReader(csvfile)
+        data = []
 
-    
-    qr = qrcode.QRCode()
-    qr.add_data(str(123)) 
+        # Check if 'Name' column exists in CSV file
+        # if 'Name' not in reader.fieldnames:
+        #     raise ValueError('Missing "Name" column in CSV file')
 
-    qr.make_image().save('qrcode.png')
-    pdf.image('qrcode.png', 10, 210-10, 60, 60)
-      
-    pdf.set_xy(140, 210-10) 
-    pdf.cell(w=60, h=60, txt=customer, border=1, ln=0)
-    os.remove('qrcode.png')
-    
-import string
+        for row in reader:
+            converted_row = {}
+            for key, value in row.items():
+                key_ascii = key.encode('ascii', 'ignore').decode()
+                value_ascii = value.encode('ascii', 'ignore').decode()
+                converted_row[key_ascii] = value_ascii
 
-for stage in pages:
+            data.append(converted_row)
 
-  # Allow only ascii chars in stage name
-  ascii_letters = string.ascii_letters + string.digits
-  cleaned_stage = "".join(l for l in stage if l in ascii_letters)
+    return data
 
-  # Encode string as utf-8 when making filename
-  filename = f'{cleaned_stage}.pdf'.encode('utf-8') 
 
-  pages[stage].output(filename)
+
+# Group data by stage
+def group_data_by_stage(data):
+    grouped_data = {}
+    for row in data:
+        stage = row['stage']
+        if stage not in grouped_data:
+            grouped_data[stage] = []
+        grouped_data[stage].append(row)
+    return grouped_data
+
+# Generate QR code
+def generate_qr_code(data):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=QR_CODE_SIZE,
+        border=4
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    return qr.make_image(fill_color='black', back_color='white')
+
+# Create PDF page
+def create_pdf_page(c, stage_data):
+    # Draw squares
+    for i, row in enumerate(stage_data):
+        name = row['Name']
+        customer = row['customer'] if row['customer'] else '?'
+
+        x = (i % 3) * (SQUARE_WIDTH + GAP)
+        y = (i // 3) * (SQUARE_HEIGHT + GAP)
+
+        # c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT, fillColor='gray', strokeColor='black')
+        c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT)
+
+        # Draw name
+        c.setFont('Helvetica', 12)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(x + 10, y + 10, name)
+
+        # Draw customer
+        c.drawString(x + 10, y + SQUARE_HEIGHT - 20, customer)
+
+        # Draw QR code
+        qr_code_image = generate_qr_code(data)
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+          qr_code_image.save(temp_file.name)
+          temp_file.close()
+
+        c.drawImage(temp_file.name, x + SQUARE_WIDTH - 50, y + 10, width=QR_CODE_SIZE, height=QR_CODE_SIZE)
+
+# Generate PDF document
+def generate_pdf(filename, data):
+    c = canvas.Canvas(filename, pagesize=A4)
+
+    # Group data by stage
+    grouped_data = group_data_by_stage(data)
+
+    # Create pages for each stage
+    for stage, stage_data in grouped_data.items():
+        c.setFont('Helvetica', 14)
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(10, 280, 'Стадия: ' + stage)
+
+        create_pdf_page(c, stage_data)
+        c.showPage()
+
+    c.save()
+
+# Read CSV data
+data = read_csv_data('data.csv')
+
+# Generate PDF document
+generate_pdf('output.pdf', data)
