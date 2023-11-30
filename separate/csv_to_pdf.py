@@ -3,14 +3,16 @@ import qrcode
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import Paragraph, Table
+from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 
 # Define constants
-SQUARE_WIDTH = 70  # mm
-SQUARE_HEIGHT = 74.25  # mm
-GAP = 10  # mm
-QR_CODE_SIZE = 20  # mm
+SQUARE_WIDTH = 70 # mm
+SQUARE_HEIGHT = 74.25 # mm
+GAP = 0 # mm (No gap between squares)
+QR_CODE_SIZE = 30 # mm (Increase QR code size)
 
 # Read CSV file
 def read_csv_data(filename):
@@ -24,22 +26,16 @@ def read_csv_data(filename):
         reader = csv.DictReader(csvfile)
         data = []
 
-        # Check if 'Name' column exists in CSV file
-        # if 'Name' not in reader.fieldnames:
-        #     raise ValueError('Missing "Name" column in CSV file')
-
         for row in reader:
             converted_row = {}
             for key, value in row.items():
-                key_ascii = key.encode('ascii', 'ignore').decode()
-                value_ascii = value.encode('ascii', 'ignore').decode()
+                key_ascii = key.encode('ascii', 'ignore').decode('utf-8')
+                value_ascii = value.encode('ascii', 'ignore').decode('utf-8')
                 converted_row[key_ascii] = value_ascii
 
             data.append(converted_row)
 
     return data
-
-
 
 # Group data by stage
 def group_data_by_stage(data):
@@ -57,27 +53,27 @@ def generate_qr_code(data):
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=QR_CODE_SIZE,
-        border=4
+        border=0
     )
     qr.add_data(data)
     qr.make(fit=True)
     return qr.make_image(fill_color='black', back_color='white')
 
 # Create PDF page
-def create_pdf_page(c, stage_data):
+def create_pdf_page(c, stage_data, one_page=False):
     # Draw squares
+    row_count = 0
     for i, row in enumerate(stage_data):
         name = row['Name']
         customer = row['customer'] if row['customer'] else '?'
 
-        x = (i % 3) * (SQUARE_WIDTH + GAP)
-        y = (i // 3) * (SQUARE_HEIGHT + GAP)
+        x = i % 3 * SQUARE_WIDTH
+        y = row_count * SQUARE_HEIGHT
 
-        # c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT, fillColor='gray', strokeColor='black')
-        c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT)
+        c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT) # Remove outline/border
 
         # Draw name
-        c.setFont('Helvetica', 12)
+        c.setFont('GolosText', 12)  # Use Cyrillic-compatible font
         c.setFillColorRGB(0, 0, 0)
         c.drawString(x + 10, y + 10, name)
 
@@ -92,21 +88,38 @@ def create_pdf_page(c, stage_data):
 
         c.drawImage(temp_file.name, x + SQUARE_WIDTH - 50, y + 10, width=QR_CODE_SIZE, height=QR_CODE_SIZE)
 
+        row_count += 1
+
+        # Check if need to start a new page
+        if one_page and row_count == 12:
+            c.showPage()
+            row_count = 0
+
 # Generate PDF document
-def generate_pdf(filename, data):
+def generate_pdf(filename, data, one_page=False):
     c = canvas.Canvas(filename, pagesize=A4)
+    pdfmetrics.registerFont(TTFont('GolosText', 'GolosText.ttf'))
 
     # Group data by stage
     grouped_data = group_data_by_stage(data)
 
     # Create pages for each stage
+    page_count = 1
     for stage, stage_data in grouped_data.items():
-        c.setFont('Helvetica', 14)
+        c.setFont('GolosText', 14)
         c.setFillColorRGB(0, 0, 0)
-        c.drawString(10, 280, 'Стадия: ' + stage)
+        c.drawString(10, 280, f'Стадия: {stage}')
 
-        create_pdf_page(c, stage_data)
-        c.showPage()
+        create_pdf_page(c, stage_data, one_page)
+
+        if not one_page:
+            c.showPage()
+            page_count += 1
+
+            # Check if need to start a new file
+            if page_count % 10 == 0:
+                c.save()
+                c = canvas.Canvas(filename + f"_page{page_count}.pdf", pagesize=A4)
 
     c.save()
 
@@ -114,4 +127,4 @@ def generate_pdf(filename, data):
 data = read_csv_data('data.csv')
 
 # Generate PDF document
-generate_pdf('output.pdf', data)
+generate_pdf('output.pdf', data, one_page=True)
