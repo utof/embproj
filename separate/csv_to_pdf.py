@@ -9,12 +9,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 
 # Define constants
-# SQUARE_WIDTH = 140 #70 # mm
-# SQUARE_HEIGHT = 140 #74.25 # mm
-GAP = 0 # mm (No gap between squares)
-QR_CODE_SIZE = 30 # mm (Increase QR code size)
+GAP = 0  # mm (No gap between squares)
+QR_CODE_RATIO = 0.25  # Proportion of QR code size relative to square dimensions
 
-# Read CSV file
+# Read CSV data
 def read_csv_data(filename):
     with open(filename, encoding='utf-8') as csvfile:
         # Strip BOM from the CSV file
@@ -37,97 +35,92 @@ def read_csv_data(filename):
 
     return data
 
-# Group data by stage
-def group_data_by_stage(data):
-    grouped_data = {}
-    for row in data:
-        stage = row['stage']
-        if stage not in grouped_data:
-            grouped_data[stage] = []
-        grouped_data[stage].append(row)
-    return grouped_data
-
 # Generate QR code
 def generate_qr_code(data):
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=QR_CODE_SIZE,
-        border=0
+        box_size=1
     )
     qr.add_data(data)
     qr.make(fit=True)
     return qr.make_image(fill_color='black', back_color='white')
 
 # Create PDF page
-def create_pdf_page(c, stage_data, one_page=False):
-    # Draw squares
+def create_pdf_page(c, data, filename=None):
+    # Get page size
     width, height = c._pagesize
-    SQUARE_HEIGHT = height / 4
-    SQUARE_WIDTH = width / 3
+
+    # Calculate square dimensions based on page size
+    square_height = height / 4
+    square_width = width / 3
+
+    # Calculate QR code dimensions based on square size
+    qr_code_width = square_height * QR_CODE_RATIO
+    qr_code_height = qr_code_width
+
+    x = 0
+    y = height
     row_count = 0
-    for i, row in enumerate(stage_data):
+
+    for i, row in enumerate(data):
         name = row['Name']
         customer = row['customer'] if row['customer'] else '?'
 
-        x = i % 3 * SQUARE_WIDTH
-        y = row_count * SQUARE_HEIGHT
+        # Draw square
+        c.rect(x, y - square_height, square_width, square_height, fillColor='gray', strokeColor=None)
 
-        c.rect(x, y, SQUARE_WIDTH, SQUARE_HEIGHT) # Remove outline/border
-
-        # Draw name
-        c.setFont('GolosText', 12)  # Use Cyrillic-compatible font
-        c.setFillColorRGB(0, 0, 0)
-        c.drawString(x + 10, y + 10, name)
+        # Wrap text if necessary
+        if len(name) > 10:  # Adjust based on desired text length
+            name_lines = name.split(' ')
+            line_count = 0
+            for line in name_lines:
+                c.setFont('GolosText', 12)
+                c.setFillColorRGB(0, 0, 0)
+                c.drawString(x + 10, y - square_height + (line_count * 15), line)
+                line_count += 1
+        else:
+            # Draw name if text length doesn't require wrapping
+            c.setFont('GolosText', 12)
+            c.setFillColorRGB(0, 0, 0)
+            c.drawString(x + 10, y - square_height + 10, name)
 
         # Draw customer
-        c.drawString(x + 10, y + SQUARE_HEIGHT - 20, customer)
+        c.setFont('GolosText', 10)  # Adjust font size for customer text
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(x + 10, y - square_height + 30, customer)
 
         # Draw QR code
         qr_code_image = generate_qr_code(data)
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
-          qr_code_image.save(temp_file.name)
-          temp_file.close()
+        temp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        qr_code_image.save(temp_file.name)
+        c.drawImage(temp_file.name, x + square_width - qr_code_width - 10, y - square_height + 10, width=qr_code_width, height=qr_code_height)
+        temp_file.close()
 
-        c.drawImage(temp_file.name, x + SQUARE_WIDTH - 50, y + 10, width=QR_CODE_SIZE, height=QR_CODE_SIZE)
+        # Move to next position
+        x += square_width + GAP
+        y -= square_height + GAP
 
-        row_count += 1
+        # Check if need to start a new row
+        if x + square_width > width:
+            x = 0
+            y -= square_height + GAP
+            row_count += 1
 
         # Check if need to start a new page
-        if one_page and row_count == 12:
+        if y < 0:
             c.showPage()
+            y = height
             row_count = 0
 
-# Generate PDF document
-def generate_pdf(filename, data, one_page=False):
-    c = canvas.Canvas(filename, pagesize=A4)
-    pdfmetrics.registerFont(TTFont('GolosText', 'GolosText.ttf'))
-
-    # Group data by stage
-    grouped_data = group_data_by_stage(data)
-
-    # Create pages for each stage
-    page_count = 1
-    for stage, stage_data in grouped_data.items():
-        c.setFont('GolosText', 14)
-        c.setFillColorRGB(0, 0, 0)
-        c.drawString(10, 280, f'Стадия: {stage}')
-
-        create_pdf_page(c, stage_data, one_page)
-
-        if not one_page:
-            c.showPage()
-            page_count += 1
-
-            # Check if need to start a new file
-            if page_count % 10 == 0:
-                c.save()
-                c = canvas.Canvas(filename + f"_page{page_count}.pdf", pagesize=A4)
-
-    c.save()
+        # Save PDF if specified
+        if filename:
+            c.save()
+            c = canvas.Canvas(filename, pagesize=A4)
+            pdfmetrics.registerFont(TTFont('GolosText', 'GolosText.ttf'))
 
 # Read CSV data
 data = read_csv_data('data.csv')
 
 # Generate PDF document
-generate_pdf('output.pdf', data, one_page=True)
+create_pdf_page('output.pdf', data)
