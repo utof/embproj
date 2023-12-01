@@ -1,14 +1,18 @@
 import csv
 import qrcode
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.platypus import Paragraph, Table
-from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
+from weasyprint import HTML
+from jinja2 import Environment, FileSystemLoader
+# import os
 
-QR_CODE_SIZE = 30 # mm (Increase QR code size)
+# Create the temporary directory if it doesn't exist
+# if not os.path.exists('\\temp'):
+#     os.makedirs('\\temp')
+
+# Define constants
+QR_CODE_SIZE = 30  # mm (Increase QR code size)
+TEMPLATE_WIDTH = 70  # mm
+TEMPLATE_HEIGHT = 74.25  # mm
 
 # Read CSV file
 def read_csv_data(filename):
@@ -25,7 +29,7 @@ def read_csv_data(filename):
         for row in reader:
             converted_row = {}
             for key, value in row.items():
-                converted_row[key] = value
+                converted_row[key] = value if value else '?'
 
             data.append(converted_row)
 
@@ -41,76 +45,47 @@ def generate_qr_code(data):
     )
     qr.add_data(data)
     qr.make(fit=True)
-    return qr.make_image(fill_color='black', back_color='white')
+    return "123"  # Replace QR code image with "123" text
 
 # Create PDF page
-def create_pdf_page(c):
-    # Draw squares
-    width, height = c._pagesize
-    SQUARE_HEIGHT = height / 4
-    SQUARE_WIDTH = width / 3 
-    NUM_COLS = 3
-    row_count = 0
+def create_pdf_page(data):
+    # Create HTML template
+    env = Environment(loader=FileSystemLoader('.'))
+    template = env.get_template('template.html')
 
-    for i, row in enumerate(data):
-        col = i % NUM_COLS
-        x = col * SQUARE_WIDTH  
-        y = (i // NUM_COLS) * SQUARE_HEIGHT  
+    # Render HTML template with data
+    encoded_data = {key: value.encode('utf-8') for key, value in data.items()}
+    html = template.render(data=encoded_data)
 
-        name = row['\ufeffName']
-        customer = row['customer'] if row['customer'] else '?'
-        
-        paragraphs = []
-        line = ""
-        for word in name.split(' '):
-            test_line = line + ' ' + word if line else word
-            if c.stringWidth(test_line) < SQUARE_WIDTH - 20:
-                line = test_line 
-            else:
-                paragraphs.append(line)
-                line = word
-        
-        if line: 
-            paragraphs.append(line)
+    # Create temporary HTML file
+    with tempfile.NamedTemporaryFile(mode='w', dir='.\\temp') as f:
+        f.write(html.decode('utf-8'))
+        f.flush()
 
-        # Draw paragraphs
-        for j, para in enumerate(paragraphs):
-            c.drawString(x + 10, y + 10 + j*14, para)
-
-        # Draw customer ###################################################
-        c.drawString(x + 10, y + SQUARE_HEIGHT - 20, customer)
-
-        # Draw QR code
-        qr_code_image = generate_qr_code(data)
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
-          qr_code_image.save(temp_file.name)
-          temp_file.close()
-
-        c.drawImage(temp_file.name, x + SQUARE_WIDTH - 50, y + 10, width=QR_CODE_SIZE, height=QR_CODE_SIZE)
-
-        row_count += 1
-
-        # Check if need to start a new page
-        if row_count == 12:
-            c.showPage()
-            row_count = 0
+        # Generate PDF from temporary HTML file
+        HTML(f.name).write_pdf('page.pdf')
 
 # Generate PDF document
 def generate_pdf(filename, data):
-    c = canvas.Canvas(filename, pagesize=A4) 
-    pdfmetrics.registerFont(TTFont('GolosText', 'GolosText.ttf'))
-    
-    while data:
-        create_pdf_page(c)        
-        c.showPage()
-        data = data[12:] # display 12 per page
-        
-    c.save()
+    # Create PDF document
+    with open(filename, 'wb') as f:
+        # Split data into chunks for multiple pages
+        chunks = [data[i:i + 12] for i in range(0, len(data), 12)]
+
+        # Create a new page for each chunk of data
+        for chunk in chunks:
+            create_pdf_page(chunk)
+
+            # Append page to PDF document
+            with open('page.pdf', 'rb') as page_file:
+                f.write(page_file.read())
+
+            # Delete temporary HTML file
+            import os
+            os.remove('page.pdf')
 
 # Read CSV data
 data = read_csv_data('data.csv')
 
 # Generate PDF document
 generate_pdf('output.pdf', data)
-
-
