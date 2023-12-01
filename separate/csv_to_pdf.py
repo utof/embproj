@@ -9,8 +9,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 import tempfile
 
 # Define constants
-SQUARE_WIDTH = 70 # mm
-SQUARE_HEIGHT = 74.25 # mm
+# SQUARE_WIDTH = 140 #70 # mm
+# SQUARE_HEIGHT = 140 #74.25 # mm
 GAP = 0 # mm (No gap between squares)
 QR_CODE_SIZE = 30 # mm (Increase QR code size)
 
@@ -62,6 +62,9 @@ def generate_qr_code(data):
 # Create PDF page
 def create_pdf_page(c, stage_data, one_page=False):
     # Draw squares
+    width, height = c._pagesize
+    SQUARE_HEIGHT = height / 4
+    SQUARE_WIDTH = width / 3
     row_count = 0
     for i, row in enumerate(stage_data):
         name = row['Name']
