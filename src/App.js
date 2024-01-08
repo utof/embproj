@@ -1,12 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import ReactFlow, { Background, addEdge, applyEdgeChanges, applyNodeChanges } from 'reactflow';
 import 'reactflow/dist/style.css';
 // import BackgroundNode from './etc/bgNode.js';
 
 import TextUpdaterNode from './etc/TextUpdaterNode.js';
-import { initialNodes } from './etc/nodes.js';
+import { GetNodes, initialNodes } from './etc/nodes.js';
 import AxisNode from './etc/axisnode.js'
 
+import Readthenodes from './readthenodes.js';
 import './etc/TextUpdaterNode.css';
 
 const rfStyle = {
@@ -16,12 +17,14 @@ const rfStyle = {
 // we define the nodeTypes outside of the component to prevent re-renderings
 // you could also use useMemo inside the component
 const nodeTypes = { textUpdater: TextUpdaterNode,
-    AxisNode: AxisNode}; // why cant i add fucking axisnode
-
+    AxisNode: AxisNode}; // why cant i add fucking axisnode 
+    
 function App() {
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState([]);
 
+  const readnodes = Readthenodes(); 
+  const [nodes, setNodes] = useState(readnodes);  
+  const [edges, setEdges] = useState([]); 
+  
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     [setNodes]
@@ -35,6 +38,8 @@ function App() {
     [setEdges]
   );
 
+  
+ 
   return (
     <ReactFlow
     nodes={nodes}
