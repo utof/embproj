@@ -11,17 +11,18 @@ function TextUpdaterNode({ data }) {
   return (
     <div 
       className="text-updater-node"
-      style={{width: '80%', height: '16%'}} 
+      style={{width: '100%', height: '16%'}} 
     >
       <div className="input">
-        <label>Text:</label> 
+        <label>Name:</label> 
         <input onChange={onChange} />
       </div>
       {/* take actual id */}
       <div className="bottom">
-        <div className="id">ABC</div> 
-        <div className="workers">5</div>  
-        <div className="random">0.423</div> 
+        <div className="id">{data["\ufeffName"]}</div> 
+        <div className="id">{data.customer}</div> 
+        <div className="id">{data.responsible}</div>  
+        <div className="id">{data.stage}</div> 
       </div>
     </div>
   );
