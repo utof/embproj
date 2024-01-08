@@ -1,6 +1,31 @@
 // nodes.js
+function GetNodes(dataElement){
+ let nodes=[];
+ nodes.push({ 
+      id: 'axis', 
+      type: 'AxisNode', 
+      position: { x: 0, y: 0 }, 
+      selectable: false, 
+      draggable: false, 
+      isConnectable: false
+    });
+    
+ for(let data in dataElement)
+  { 
+  	nodes.push(
+  	   { 
+	      id: data, 
+	      type: 'textUpdater', 
+	      data: dataElement[data],
+	      position: { x: data*100, y: data*100 }  
+	    }
+  	
+  	); 
+  } 
+  return nodes;
 
-export const initialNodes = [
+}
+const initialNodes = [
     { 
       id: 'axis', 
       type: 'AxisNode', 
@@ -52,3 +77,4 @@ export const initialNodes = [
      data: { value: 128, random: 357 }
     }
   ];
+ export {GetNodes,initialNodes};
