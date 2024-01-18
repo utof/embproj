@@ -7,7 +7,7 @@ import TextUpdaterNode from './etc/TextUpdaterNode.js';
 import { GetNodes, initialNodes } from './etc/nodes.js';
 import AxisNode from './etc/axisnode.js'
 
-import Readthenodes from './readthenodes.js';
+import { Readthenodes , updatetheNodes } from './readthenodes.js';
 import './etc/TextUpdaterNode.css';
 
 const rfStyle = {
@@ -24,7 +24,7 @@ function App() {
   const readnodes = Readthenodes(); 
   const [nodes, setNodes] = useState(readnodes);  
   const [edges, setEdges] = useState([]); 
-  
+  console.log(nodes);
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     [setNodes]
@@ -37,8 +37,8 @@ function App() {
     (connection) => setEdges((eds) => addEdge(connection, eds)),
     [setEdges]
   );
-
-  
+  for(var i in nodes)
+  updatetheNodes(i,nodes[i].position.x,nodes[i].position.y);
  
   return (
     <ReactFlow
