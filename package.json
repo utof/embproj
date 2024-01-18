@@ -9,6 +9,7 @@
     "axios": "^1.6.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-qr-code": "^2.0.12",
     "react-scripts": "5.0.1",
     "reactflow": "^11.10.1",
     "web-vitals": "^2.1.4"
@@ -25,7 +26,7 @@
       "react-app/jest"
     ]
   },
-  "proxy": "http://localhost:3000",
+  "proxy": "http://localhost:4000",
   "browserslist": {
     "production": [
       ">0.2%",
