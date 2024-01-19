@@ -1,4 +1,5 @@
-import { GetNodes, initialNodes } from './etc/nodes.js'; 
+import { GetNodes }from './etc/nodes.js'; 
+
 
 
 function Readthenodes(){ 
@@ -19,7 +20,9 @@ function updatetheNodes(i,x,y){
     const request = new XMLHttpRequest(); 
     request.open('POST', '/apipos', false); 
     request.setRequestHeader("Content-type", "application/json;charset=UTF-8"); 
-    request.send(JSON.stringify({"id":i-1,"pos":{"x":x,"y":y}})); 
+
+    request.send(JSON.stringify({"id":i,"pos":{"x":x,"y":y}})); 
+
     if (request.status !== 200) {
       // handle an error here
       console.log(request.status);
