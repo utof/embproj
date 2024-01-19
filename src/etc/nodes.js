@@ -17,7 +17,7 @@ function GetNodes(dataElement){
 	      id: data, 
 	      type: 'textUpdater', 
 	      data: dataElement[data],
-	      position: { x: data*100, y: data*100 }  
+	      position: dataElement[data].position  
 	    }
   	
   	); 

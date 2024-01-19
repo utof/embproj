@@ -9,20 +9,19 @@
     justify-content: space-between;
     align-items: flex-end;
     padding: 10px;
-  }
-  .input {
-    padding: 5px;
-  }
-  
-  label {
-    font-size: 12px;
-  }
+  } 
   .bottom {
-    flex-grow: 1;
-    display: flex;
-    justify-content: space-between;
-    align-self: flex-end;
+    display:table;
+    flex-grow:1;
   }
-  .id, .workers, .random {
-    padding: 5px;
+  .id{ 
+    font-size: 30px;  
+    display: table-row;
   }
+  #qrcode{  
+    display: table-row; 
+  }
+  tr {
+    padding: 10px;
+    margin:30px;
+}
